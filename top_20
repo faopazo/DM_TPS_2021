@@ -1,0 +1,139 @@
+#install.packages("spotifyr")
+#install.packages("knitr")
+#install.packages("mongolite")
+
+library(spotifyr)
+library(knitr)
+library(mongolite)
+
+#//creación de vistas en mongo
+#db.createView("charts_2018", "charts", [
+#  {$match: { week_start: {$regex: "^2018.*"}}},
+#  {$project: { Position: 1, Track_Name: 1, Artist: 1, Streams: 1, week_start:1 }}
+#                                     ])     
+
+##2018
+charts2018<- mongo(db= 'DMUBA_SPOTIFY', collection = 'charts2018')
+
+df_charts2018 <- charts2018$find()
+View(df_charts2018)
+
+##2019
+charts2019<- mongo(db= 'DMUBA_SPOTIFY', collection = 'charts2019')
+
+df_charts2019 <- charts2019$find()
+View(df_charts2019)
+
+##2020
+charts2020<- mongo(db= 'DMUBA_SPOTIFY', collection = 'charts2020')
+
+df_charts2020 <- charts2020$find()
+View(df_charts2020)
+
+#####valido ok
+charts2018$count()
+charts2019$count()
+charts2020$count()
+
+
+##filtro por posiciones 1:20 (top20)
+
+df_charts2018 <- df_charts2018[df_charts2018$Position < 21,]
+View(df_charts2018)
+
+
+df_charts2019 <- df_charts2019[df_charts2019$Position < 21,]
+View(df_charts2019)
+
+
+df_charts2020 <- df_charts2020[df_charts2020$Position < 21,]
+View(df_charts2020)
+
+
+##valido top20 por año
+unique(df_charts2018$Position)
+unique(df_charts2019$Position)
+unique(df_charts2020$Position)
+
+
+
+########################## Preprocesamiento #####################################
+
+
+############# Duplicados ?
+
+sum(duplicated(df_charts2018))
+sum(!duplicated(df_charts2018)) #casos sin duplicados
+
+sum(duplicated(df_charts2019))
+sum(!duplicated(df_charts2019)) #casos sin duplicados
+
+sum(duplicated(df_charts2020))
+sum(!duplicated(df_charts2020)) #casos sin duplicados
+
+
+## Elimino filas duplicadas con unique
+unicos_charts2018<- unique(df_charts2018)
+str(unicos_charts2018)
+
+unicos_charts2019<- unique(df_charts2019)
+str(unicos_charts2019)
+
+unicos_charts2020<- unique(df_charts2020)
+str(unicos_charts2020)
+
+# data frames sin duplicados
+df_charts2018=unicos_charts2018
+df_charts2019=unicos_charts2019
+df_charts2020=unicos_charts2020
+
+View(df_charts2018)
+View(df_charts2019)
+View(df_charts2020)
+
+
+################ Faltantes #No hay
+sum(is.na(df_charts2018))
+sum(is.na(df_charts2019))
+sum(is.na(df_charts2020))
+
+
+###############
+
+# Streams
+summary(df_charts2018)
+summary(df_charts2019)
+summary(df_charts2020)
+
+
+# Moda artista
+library(modeest)
+
+mfv(df_charts2018$Artist)
+mfv(df_charts2019$Artist)
+mfv(df_charts2020$Artist)
+
+#arreglar gráficos, ordenar decreciente, hacer un corte, top 20, mostrarlos juntos
+barplot(table(df_charts2018$Artist), xlab = "Artista", 
+        ylab = "Frecuencia", ylim = c(0, 60), main="Artistas más escuchados en 2018")
+
+barplot(table(df_charts2019$Artist), xlab = "Artista", 
+        ylab = "Frecuencia", ylim = c(0, 60), main="Artistas más escuchados en 2019")
+
+barplot(table(df_charts2020$Artist), xlab = "Artista", 
+        ylab = "Frecuencia", ylim = c(0, 60), main="Artistas más escuchados en 2020")
+
+# Moda track name
+
+mfv(df_charts2018$Track_Name)
+mfv(df_charts2019$Track_Name)
+mfv(df_charts2020$Track_Name)
+
+
+########################## Integraciones #####################################
+
+
+## unir todos los años (limpios) en un dataframe
+
+## mergear con artist (para compartir el ID) y
+## con audio_features (caracteristicas de las canciones)
